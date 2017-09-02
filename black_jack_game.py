@@ -14,9 +14,7 @@ ranking = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jacket', 'Queen',
 # Dict with the rankings and corresponding points
 card_values = {'A': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, '10': 10, 'Jacket': 10, 'Queen': 10, 'King': 10}
 
-account = 1000
-hand_points = 0
-dealer_points = 0
+stand = False
 
 class Card:
     def __init__(self, suit, ranking):
@@ -33,9 +31,15 @@ class Hand():
     def card_add(self,card):
         self.cards.append(card)
         
-    def showhand(self):
-        for i in self.cards:
-            print(i)
+    def showhand(self, x):
+        if x == 'player':
+            for i in self.cards:
+                print(i)
+        elif x == 'one':
+            print(self.cards[0])
+        elif x == 'two':
+            print(self.cards[1])
+            
         
         
 class Deck:
@@ -76,38 +80,57 @@ def deal_cards():
 # Function to clear the console    
 def cls():
     os.system('cls')
+
+# Start function where the player enters his name. 
+def start():
+   print("Welcome to the Black Jack game! \n")
+   global player_name, account, dealer_points, player_points
+   
+   account = 1000
+   player_points = 0
+   dealer_points = 0
     
+   print("What is your name?\n")
+   player_name = input("My name is: ")
+    
+   # Prepare the deck
+   deal_cards()
+   
+   # Initialize the "menu" - Quit or Play
+   intro()
+ 
+# Menu where the player can Quit or Play
 def intro():
-    print("Welcome to the Black Jack game! \n")
-    global player_name
-    
-    print("What is your name?\n")
-    player_name = input("My name is: ")
     print("\nGood to have you playing", player_name,". What would you like to do?")
     
     while(True):
         play_or_quit = input("Type 'Play' to run the game or 'Quit' to exit the program: ").lower()
         
         if play_or_quit[0] == 'q':
-                print("\nThanks for playing!")
-                time.sleep(1)
-                break
-                exit()
+            print("\nThanks for playing!")
+            print(play_or_quit)
+            time.sleep(1)
+            global account, player_points, dealer_points
+            account = 0 
+            player_points = 0 
+            dealer_points = 0
+            break
+            exit()
             
         elif play_or_quit[0] == 'p':
             print("Okay, lets start! \n")
             for i in range(1, 4):
                 time.sleep(0.5)
                 print("Loading...")
-            deal_cards()
             game_session()
             
         else:
             print("Please try again. Write 'Play' or 'Quit'.")
             continue
+    
 
 def game_session():
-    global account, bet, hand_points, dealer_points
+    global account, bet, player_points, dealer_points
     
     print("You currently have", account, "SEK in your account.\n")
     
@@ -131,29 +154,100 @@ def game_session():
     print("\nYou choose to bet", bet, "SEK, that means you have", account, "SEK left.\n")
     print("Dealing cards... \n")
     
-    # Checking the player hand, cards and total points
+    ### Checking the player hand, cards and total points
     print("Your hand is: ")
-    player_hand.showhand()
+    player_hand.showhand('player')
     
+    # Take the sum of card ranks and store in hand_points
     for i in range(len(player_hand.cards)):
         temp = player_hand.cards[i].rank
-        hand_points += card_values[temp]
-    print ("Total points:", hand_points)
+        player_points += card_values[temp]
+    print ("Total points:", player_points)
     
-    # Checking the dealers hand, cards and total points
+    ### Checking the dealers hand, cards and total points
     print("The dealers hand is: ")
-    dealer_hand.showhand()
+    dealer_hand.showhand('one')
     
-    for i in range(len(dealer_hand.cards)):
+    # Take the sum of card ranks and sum in dealer_points
+    for i in range(len(dealer_hand.cards)-1):
         temp = dealer_hand.cards[i].rank
         dealer_points += card_values[temp]
     print ("Total points:", dealer_points)    
     
+    compare_hands()
+    
+    print("Do you want to hit or stand?")
+    hit_or_stand = input("I choose to: ").lower()
+    
+    if hit_or_stand == 'h':
+        player_hand.card_add(deck.deal())
+        ### Checking the player hand, cards and total points
+        print("Your hand is: ")
+        player_hand.showhand('player')
+    
+        # Take the sum of card ranks and store in hand_points
+        for i in range(len(player_hand.cards)):
+            temp = player_hand.cards[i].rank
+            player_points += card_values[temp]
+            print ("Total points:", player_points)
+        compare_hands()
+    else:
+        global stand
+        stand = True
+        compare_hands()
 
-"""def compare_hands():
-    player_hand.showhand()
-    dealer_hand.showhand() """
+def compare_hands():
+    global account, bet
+    
+    if stand == True:
+        if dealer_points >= player_points:
+            print("The dealer wins. You lose", bet, "SEK.\n")
+            account -= bet
+            print("You have:", account, "left in your account.\n")
+            if account == 0:
+                print("You have lost all your money.")
+                time.sleep(3)
+                exit()
+            else:
+                intro()
+                
+        else:
+            print("You win this round! You gain", bet, "SEK.\n")
+            account += bet
+            print("You have:", account, "left in your account.\n")
+            time.sleep(2)
+            intro()
+            
+    elif player_points == 21:
+        if dealer_points != 21:
+            print("You win this round! You gain", bet, "SEK.\n")
+            account += bet
+            print("You have:", account, "left in your account.\n")
+            time.sleep(2)
+            intro()
+        else:
+            print("The dealer wins. You lose", bet, "SEK.\n")
+            account -= bet
+            print("You have:", account, "left in your account.\n")
+            if account == 0:
+                print("You have lost all your money.")
+                time.sleep(3)
+                exit()
+            else:
+                intro()
+                
+    elif player_points > 21:
+        print("The dealer wins. You lose", bet, "SEK.\n")
+        account -= bet
+        print("You have:", account, "left in your account.\n")
+        if account == 0:
+            print("You have lost all your money.")
+            time.sleep(3)
+            exit()
+        else:
+            intro()
+            
+    else:
+        pass
 
-   
-
-intro()    
+    
